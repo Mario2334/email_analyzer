@@ -1,9 +1,12 @@
 import cube
 import pytest
 
-def test_case():
-    assert cube.cube(3)==27
-
-def test_raises_exception():
-    with pytest.raises(TypeError):
-        cube.cube('El')
+cubes= (
+    (0,0),
+    (1,1),
+    (2,8),
+    (3,27),
+)
+@pytest.mark.parametrize('n,expected',cube)
+def test_cube(n,expected):
+    assert cube.cube(n)==expected
