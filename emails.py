@@ -6,41 +6,52 @@ from bs4 import BeautifulSoup
 from langdetect import detector_factory
 
 
-def decode_base64(data):
-    """Decode base64, padding being optional.
+class parser(object):
+    def __init__(self, filename):
+        self.file = open(filename)
+        self.parser = 'lxml'
+
+    def run(self):
+        decoded = self.decode_data()
+        soup = BeautifulSoup(decoded, self.parser)
+        all_text = [self.clean_string(i.text) for i in soup.find_all('p')]
+        detector_factory.seed = 0
+        for z in all_text:
+            cleaned = self.clean_string(z).split('.')
+            for string in cleaned:
+                if not string == '':
+                    print(string)
+                    try:
+                        print(langdetect.detect(string))
+                    except langdetect.detector_factory.LangDetectException:
+                        print('No features')
+                        pass
+
+    def clean_string(self, text):
+        import re
+        return re.sub(pattern='\s*\n\s*', repl='', string=text)
+
+    def decode_base64(self, data):
+        """Decode base64, padding being optional.
 
     :param data: Base64 data as an ASCII byte string
     :returns: The decoded byte string.
 
     """
-    missing_padding = len(data) % 4
-    if missing_padding != 0:
-        data += b'=' * (4 - missing_padding)
-    return base64.decodebytes(data)
+        missing_padding = len(data) % 4
+        if missing_padding != 0:
+            data += b'=' * (4 - missing_padding)
+        return base64.decodebytes(data)
+
+    def decode_data(self):
+        email_content = email.message_from_string(self.file.read())
+        message_data = email_content.get_payload()[0]._payload
+        if '<' in message_data:
+            return message_data
+        else:
+            message_data = str.encode(message_data)
+            return self.decode_base64(message_data).decode('ascii')
 
 
-def decode_data():
-    file = open(
-        'C:/Users/Hellrazer/Downloads/github-and-stackexchange-messages-master/github-and-stackexchange-messages-master/1490137435.M903306P41655Q453.Pauls-MBA.cable.rcn.com')
-    i = email.message_from_string(file.read())
-    if '<' in i.get_payload()[1]._payload:
-        a = i.get_payload()[1]._payload
-    else:
-        a = decode_base64(str.encode(i.get_payload()[1]._payload)).decode('ascii')
-    open('message.html', 'w').write(a)
-
-def clean_string(text):
-    import re
-    return [i for i in re.split(r'\s*\n\s*' ,text) if i]
-
-if __name__=='__main__':
-    decode_data()
-    f = open('message.html', 'rb')
-    soup = BeautifulSoup(f.read(), 'lxml')
-    a = soup.find_all('p')
-    detector_factory.seed = 0
-    for c in a:
-        if not c.is_empty:
-            for i in clean_string(text=c.text):
-                print(i)
-                print(langdetect.detect(i))
+if __name__ == '__main__':
+    parser('1490137299.M545763P41655Q3.Pauls-MBA.cable.rcn.com').run()
