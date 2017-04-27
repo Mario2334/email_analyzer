@@ -3,26 +3,27 @@ import email
 
 import langdetect
 from bs4 import BeautifulSoup
-from langdetect import detector_factory
 
 
 class parser(object):
     def __init__(self, filename):
+        self.name = filename
         self.file = open(filename)
         self.parser = 'lxml'
 
     def run(self):
+        self.dictionary = dict()
         decoded = self.decode_data()
         soup = BeautifulSoup(decoded, self.parser)
         all_text = [self.clean_string(i.text) for i in soup.find_all('p')]
-        detector_factory.seed = 0
         for z in all_text:
-            cleaned = self.clean_string(z).split('.')
+            cleaned = self.clean_string(z).split(' ')
             for string in cleaned:
-                if not string == '':
+                if string and (not string.isspace()):
                     print(string)
                     try:
                         print(langdetect.detect(string))
+                        self.dictionary[langdetect.detect(text=string)] += 1
                     except langdetect.detector_factory.LangDetectException:
                         print('No features')
                         pass
@@ -52,6 +53,21 @@ class parser(object):
             message_data = str.encode(message_data)
             return self.decode_base64(message_data).decode('ascii')
 
+    def to_html(self, data):
+        from html import HTML
+        a = HTML('html', 'Parsing')
+        t = a.table(border='1')
+        nlang = self.dictionary.keys()
+        for i in nlang:
+            r = t.tr
+            r.td(i)
+            r.td(self.dictionary[i])
+        print(a)
+        file = open(self.name + '.html', 'w')
+        file.write(a)
+        file.close()
+
 
 if __name__ == '__main__':
-    parser('1490137299.M545763P41655Q3.Pauls-MBA.cable.rcn.com').run()
+    p = input('file location')
+    parser(p).run()
