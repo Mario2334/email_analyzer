@@ -1,9 +1,6 @@
 import base64
 import email
-import os
 
-import dominate
-import dominate.tags as tags
 import langdetect
 from bs4 import BeautifulSoup
 
@@ -19,22 +16,17 @@ class parser(object):
         decoded = self.decode_data()
         soup = BeautifulSoup(decoded, self.parser)
         all_text = [self.clean_string(i.text) for i in soup.find_all('p')]
-        print(all_text)
         for z in all_text:
             cleaned = self.clean_string(z).split(' ')
             for string in cleaned:
                 if string and (not string.isspace()):
+                    print(string)
                     try:
                         print(langdetect.detect(string))
                         self.dictionary[langdetect.detect(text=string)] += 1
                     except langdetect.detector_factory.LangDetectException:
                         print('No features')
                         pass
-                    except KeyError:
-                        self.dictionary[langdetect.detect(text=string)] = 0
-                        pass
-
-        self.to_html(self.dictionary)
 
     def clean_string(self, text):
         import re
@@ -55,38 +47,27 @@ class parser(object):
     def decode_data(self):
         email_content = email.message_from_string(self.file.read())
         message_data = email_content.get_payload()[0]._payload
-        print(message_data)
         if '<' in message_data:
             return message_data
         else:
             message_data = str.encode(message_data)
-            try:
-                return self.decode_base64(message_data).decode('ascii')
-            except:
-                return message_data
+            return self.decode_base64(message_data).decode('ascii')
 
     def to_html(self, data):
-
-        doc = dominate.document(title='language chart')
-        leng = len(data.keys())
-        with doc.head:
-            tags.script(type='text/javascript', src='script.js')
-        with doc:
-            with doc.add(tags.body()).add(tags.tbody()):
-                tags.attr(cls='Table')
-                tr = tags.tr()
-                tr.add('Language')
-                tr.add('No of appearances')
-                for i in data.keys():
-                    with tags.tr as l:
-                        l.add(tags.td.add(tags.p(i)))
-                        l.add(tags.td.add(tags.p(data[i])))
-                        tags.attr(cls='table_d')
-
-        file = open(os.getcwd() + '\data\\' + self.name + '.html', 'w')
-        file.write(doc.render())
+        from html import HTML
+        a = HTML('html', 'Parsing')
+        t = a.table(border='1')
+        nlang = self.dictionary.keys()
+        for i in nlang:
+            r = t.tr
+            r.td(i)
+            r.td(self.dictionary[i])
+        print(a)
+        file = open(self.name + '.html', 'w')
+        file.write(a)
         file.close()
 
 
 if __name__ == '__main__':
-    parser('P.com').run()
+    p = input('file location')
+    parser(p).run()
