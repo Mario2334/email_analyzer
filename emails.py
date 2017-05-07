@@ -1,7 +1,6 @@
 import base64
 import email
 import os
-
 import dominate
 import dominate.tags as tags
 import langdetect
