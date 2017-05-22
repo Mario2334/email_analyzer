@@ -1,16 +1,33 @@
 import base64
 import email
 import os
-import dominate
-import dominate.tags as tags
-import langdetect
-from bs4 import BeautifulSoup
+
+try:
+    import dominate
+    import dominate.tags as tags
+    import langdetect
+    from bs4 import BeautifulSoup
+except ImportError:
+    base_call = ['pip', 'install']
+    libs = ['bs4', 'langdetect']
+    import subprocess
+
+    for i in libs:
+        subprocess.call([base_call[0], base_call[1], i])
+    pass
+import re
+
+''' In this module I parsed all the emails in given set,decode it to readable to langdetect
+and then the module detects languages in given sentences.
+Use python 3+.
+and save results in an html file
+'''
 
 
 class parser(object):
-    def __init__(self, filename):
+    def __init__(self, location, filename):
         self.name = filename
-        self.file = open(filename)
+        self.file = open(location + '\\' + self.name)
         self.parser = 'lxml'
 
     def run(self):
@@ -18,11 +35,11 @@ class parser(object):
         decoded = self.decode_data()
         soup = BeautifulSoup(decoded, self.parser)
         all_text = [self.clean_string(i.text) for i in soup.find_all('p')]
-        print(all_text)
         for z in all_text:
-            cleaned = self.clean_string(z).split(' ')
+            cleaned = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', z)
             for string in cleaned:
                 if string and (not string.isspace()):
+                    print(string)
                     try:
                         print(langdetect.detect(string))
                         self.dictionary[langdetect.detect(text=string)] += 1
@@ -30,13 +47,12 @@ class parser(object):
                         print('No features')
                         pass
                     except KeyError:
-                        self.dictionary[langdetect.detect(text=string)] = 0
+                        self.dictionary[langdetect.detect(text=string)] = 1
                         pass
 
         self.to_html(self.dictionary)
 
     def clean_string(self, text):
-        import re
         return re.sub(pattern='\s*\n\s*', repl='', string=text)
 
     def decode_base64(self, data):
@@ -77,15 +93,23 @@ class parser(object):
                 tr.add('Language')
                 tr.add('No of appearances')
                 for i in data.keys():
-                    with tags.tr as l:
-                        l.add(tags.td.add(tags.p(i)))
-                        l.add(tags.td.add(tags.p(data[i])))
-                        tags.attr(cls='table_d')
-
-        file = open(os.getcwd() + '\data\\' + self.name + '.html', 'w')
+                    a = tags.tr
+                    a.add(tags.td(tags.p(i)))
+                    a.add(tags.td(tags.p(data[i])))
+        file_location = os.getcwd()
+        file = open(file_location + '\\data\\results\\' + self.name + '.html', 'w+')
         file.write(doc.render())
         file.close()
 
 
+'''
 if __name__ == '__main__':
-    parser('P.com').run()
+    import os
+    curr_mails = os.getcwd() + '\\data\mails'
+    dataset = os.listdir(curr_mails)
+    base_call = ['pip', 'install']
+    libs = ['bs4', 'langdetect']
+    for i in dataset:
+        parser(curr_mails ,i).run()
+
+'''
